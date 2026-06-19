@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Capacity Analysis Redesign</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --line: #dce4ef;
+      --line-strong: #c5cfdd;
+      --text: #111827;
+      --muted: #64748b;
+      --subtle: #94a3b8;
+      --primary: #0f766e;
+      --primary-soft: #e7f6f3;
+      --green: #15803d;
+      --green-soft: #e8f7ed;
+      --red: #b42318;
+      --red-soft: #fff1f0;
+      --amber: #b7791f;
+      --amber-soft: #fff5d6;
+      --blue: #2563eb;
+      --blue-soft: #eaf1ff;
+      --shadow: 0 18px 48px rgba(15, 23, 42, .08);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .factory {
+      height: 64px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 14px;
+    }
+
+    .logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #111827;
+      color: white;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+    }
+
+    .factory strong,
+    .profile strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .factory span,
+    .profile span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .nav {
+      padding: 12px 10px;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .nav-item,
+    .work-card,
+    .back {
+      border-radius: 8px;
+    }
+
+    .back {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 9px;
+      background: #e9eef5;
+      color: #475569;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .work-card {
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      background: white;
+      border: 1px solid var(--line);
+      margin-bottom: 9px;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #e2e8f0;
+      font-weight: 900;
+    }
+
+    .eyebrow {
+      color: #697789;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: .07em;
+      font-weight: 900;
+    }
+
+    .section {
+      color: #7b8798;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 900;
+      font-size: 10px;
+      padding: 15px 4px 6px;
+    }
+
+    .nav-item {
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 10px;
+      color: #64748b;
+      font-size: 13px;
+      position: relative;
+    }
+
+    .nav-item.active {
+      background: #e8edf4;
+      color: #111827;
+      font-weight: 800;
+    }
+
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      right: 10px;
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--amber);
+    }
+
+    .profile {
+      border-top: 1px solid var(--line-strong);
+      padding: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: #f8fafc;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
+    .topbar {
+      height: 64px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .94);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(10px);
+    }
+
+    .crumbs {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      color: #526177;
+      min-width: 0;
+      white-space: nowrap;
+    }
+
+    .crumbs strong {
+      color: var(--text);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .search {
+      position: relative;
+      width: min(340px, 34vw);
+    }
+
+    .search input {
+      width: 100%;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 58px 0 36px;
+      background: #fbfdff;
+      color: var(--text);
+      outline: none;
+    }
+
+    .search .mag {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--subtle);
+    }
+
+    .search .key {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 1px 7px;
+      background: white;
+      color: #718096;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .icon-btn,
+    .btn {
+      min-height: 38px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 12px;
+      font-weight: 850;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .icon-btn {
+      width: 38px;
+      padding: 0;
+    }
+
+    .btn.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .btn.danger {
+      background: #9ca3af;
+      border-color: #9ca3af;
+      color: white;
+    }
+
+    .content {
+      width: min(1510px, calc(100% - 48px));
+      margin: 22px auto 44px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .page-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 25px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .head-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .select {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: #344054;
+      padding: 0 10px;
+      font-weight: 750;
+    }
+
+    .health {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr .85fr .85fr;
+      gap: 12px;
+    }
+
+    .panel,
+    .card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .health-card {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      min-height: 118px;
+    }
+
+    .health-card.blocked {
+      border-color: #f2c6c4;
+      background: linear-gradient(180deg, #fff, #fff7f7);
+    }
+
+    .health-card.warning {
+      border-color: #efd99b;
+      background: linear-gradient(180deg, #fff, #fffaf0);
+    }
+
+    .health-card span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .health-card strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1.15;
+    }
+
+    .health-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 5px 9px;
+      border: 1px solid transparent;
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 900;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge.error {
+      color: var(--red);
+      background: var(--red-soft);
+      border-color: #fecaca;
+    }
+
+    .badge.warn {
+      color: var(--amber);
+      background: var(--amber-soft);
+      border-color: #f0dda6;
+    }
+
+    .badge.ok {
+      color: var(--green);
+      background: var(--green-soft);
+      border-color: #bfe7ca;
+    }
+
+    .badge.info {
+      color: #1d4ed8;
+      background: var(--blue-soft);
+      border-color: #c8d8fb;
+    }
+
+    .progress {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e7edf5;
+    }
+
+    .progress div {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--primary);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .styles-panel {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .style-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      background: var(--surface-soft);
+      cursor: pointer;
+    }
+
+    .style-card.active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, .08);
+    }
+
+    .style-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 10px;
+    }
+
+    .style-top strong {
+      display: block;
+      line-height: 1.3;
+    }
+
+    .style-top span {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .style-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mini {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: white;
+    }
+
+    .mini span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .mini strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 13px;
+    }
+
+    .planner {
+      overflow: hidden;
+    }
+
+    .planner-head {
+      min-height: 58px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: #fbfdff;
+    }
+
+    .planner-head h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 640px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1180px;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 8px;
+      text-align: right;
+      background: white;
+      vertical-align: middle;
+    }
+
+    th:first-child,
+    td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      text-align: left;
+      min-width: 210px;
+      max-width: 210px;
+      background: #fbfdff;
+      box-shadow: 8px 0 16px rgba(15, 23, 42, .04);
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 900;
+    }
+
+    thead th:first-child {
+      z-index: 5;
+    }
+
+    .row-label strong {
+      display: block;
+      color: #111827;
+    }
+
+    .row-label span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .cell-input {
+      width: 112px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      text-align: right;
+      padding: 0 9px;
+      color: var(--text);
+      background: white;
+      outline: none;
+      font-weight: 750;
+    }
+
+    .cell-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    .cell-input.over {
+      border-color: #f0b4ae;
+      background: #fff7f7;
+      color: var(--red);
+    }
+
+    .cell-input.active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .readonly {
+      color: #475569;
+      font-weight: 800;
+    }
+
+    .positive {
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .negative {
+      color: var(--red);
+      font-weight: 900;
+    }
+
+    .capacity-row td {
+      background: #fbfdff;
+    }
+
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: white;
+      background: #111827;
+      box-shadow: 0 20px 52px rgba(15, 23, 42, .25);
+      transform: translateY(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: .2s ease;
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 1180px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .content {
+        width: calc(100% - 28px);
+      }
+
+      .health,
+      .layout,
+      .page-head {
+        grid-template-columns: 1fr;
+      }
+
+      .head-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topbar {
+        height: auto;
+        padding: 12px;
+        display: grid;
+      }
+
+      .top-actions,
+      .search {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="factory">
+        <div class="logo">MF</div>
+        <div>
+          <strong>Main Factory</strong>
+          <span>Capacity workspace</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <div class="back">← All Buyers</div>
+        <div class="work-card">
+          <div class="avatar">A</div>
+          <div><div class="eyebrow">Buyer</div><strong>Arong</strong></div>
+          <span>↗</span>
+        </div>
+        <div class="work-card">
+          <div class="avatar">PO</div>
+          <div><div class="eyebrow">Order · 1 of 3</div><strong>PO-2026-003</strong></div>
+          <span>↗</span>
+        </div>
+
+        <div class="nav-item">▣ Order Overview</div>
+        <div class="nav-item">✣ Styles</div>
+        <div class="section">Completed</div>
+        <div class="nav-item">▦ Operation Bulletin</div>
+        <div class="section">Available</div>
+        <div class="nav-item active">◴ Capacity Analysis</div>
+        <div class="section">Blocked</div>
+        <div class="nav-item">▦ BOM</div>
+        <div class="nav-item">↔ T&amp;A</div>
+        <div class="nav-item">⚗ Sample Coordination</div>
+        <div class="nav-item">▤ Master Production Plan</div>
+      </nav>
+      <div class="profile">
+        <div class="avatar">P</div>
+        <div><strong>planning@email.com</strong><span>Planning</span></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <span>▣ Dashboard</span>
+          <span>›</span>
+          <span>Buyers</span>
+          <span>›</span>
+          <span>Purchase Orders</span>
+          <span>›</span>
+          <strong>PO-2026-003</strong>
+        </nav>
+        <div class="top-actions">
+          <label class="search">
+            <span class="mag">⌕</span>
+            <input id="search" aria-label="Search" placeholder="Search style or month...">
+            <span class="key">Ctrl K</span>
+          </label>
+          <button class="icon-btn" aria-label="Notifications">⌁</button>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="page-head">
+          <div>
+            <h1>Capacity Analysis</h1>
+            <p class="subtitle">Allocate production minutes by shipment month and confirm the factory can satisfy each style before saving the order plan.</p>
+          </div>
+          <div class="head-actions">
+            <select class="select" id="viewMode" aria-label="View mode">
+              <option>Monthly view</option>
+              <option>Quarterly summary</option>
+            </select>
+            <button class="btn" id="autoBalance">Auto balance</button>
+            <button class="btn primary" id="saveBtn">Save allocation</button>
+          </div>
+        </div>
+
+        <section class="health" aria-label="Capacity health">
+          <div class="health-card blocked" id="saveHealth">
+            <span>Save status</span>
+            <strong id="saveTitle">Blocked</strong>
+            <p id="saveCopy">Two shipment requirements are under-allocated and one style is over-allocated.</p>
+            <div><span class="badge error" id="saveBadge">Needs allocation</span></div>
+          </div>
+          <div class="health-card">
+            <span>Total required</span>
+            <strong id="requiredTotal">870,000</strong>
+            <p>Minutes required across selected styles.</p>
+          </div>
+          <div class="health-card warning">
+            <span>Allocated</span>
+            <strong id="allocatedTotal">600,000</strong>
+            <p id="allocationDelta">270,000 minutes remaining.</p>
+          </div>
+          <div class="health-card">
+            <span>Factory vacancy</span>
+            <strong id="vacancyTotal">103.0M</strong>
+            <p>Available after this order across visible months.</p>
+          </div>
+        </section>
+
+        <section class="layout">
+          <aside class="panel styles-panel">
+            <div class="panel-head">
+              <h2>Style Requirements</h2>
+              <span class="badge warn" id="styleIssueCount">3 issues</span>
+            </div>
+            <div class="style-card active" data-style="amazing">
+              <div class="style-top">
+                <div>
+                  <strong>STY-2026-002 · Amazing Style</strong>
+                  <span>Shipment: Nov 2026</span>
+                </div>
+                <span class="badge warn" id="amazingBadge">Over</span>
+              </div>
+              <div class="progress"><div id="amazingProgress" style="width:100%"></div></div>
+              <div class="style-meta">
+                <div class="mini"><span>Required</span><strong>420,000</strong></div>
+                <div class="mini"><span>Allocated</span><strong id="amazingAllocated">550,000</strong></div>
+              </div>
+            </div>
+
+            <div class="style-card" data-style="awesome">
+              <div class="style-top">
+                <div>
+                  <strong>STY-2026-001 · Awesome Style</strong>
+                  <span>Shipment: Oct 2026</span>
+                </div>
+                <span class="badge error" id="awesomeBadge">Short</span>
+              </div>
+              <div class="progress"><div id="awesomeProgress" style="width:0%"></div></div>
+              <div class="style-meta">
+                <div class="mini"><span>Required</span><strong>450,000</strong></div>
+                <div class="mini"><span>Allocated</span><strong id="awesomeAllocated">0</strong></div>
+              </div>
+            </div>
+          </aside>
+
+          <section class="panel planner">
+            <div class="planner-head">
+              <div>
+                <h2>Monthly Capacity Planner</h2>
+                <p class="subtitle">Edit allocation, manpower, and working days. Vacant minutes update immediately.</p>
+              </div>
+              <div class="head-actions">
+                <button class="btn" id="clearAllocations">Clear order allocation</button>
+                <button class="btn" id="editFactory">Edit factory capacity</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table aria-label="Capacity allocation table">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>May 2026</th>
+                    <th>June 2026</th>
+                    <th>July 2026</th>
+                    <th>August 2026</th>
+                    <th>September 2026</th>
+                    <th>October 2026</th>
+                    <th>November 2026</th>
+                    <th>December 2026</th>
+                    <th>January 2027</th>
+                    <th>February 2027</th>
+                  </tr>
+                </thead>
+                <tbody id="capacityBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">Updated</div>
+
+  <script>
+    const months = [
+      "May 2026",
+      "June 2026",
+      "July 2026",
+      "August 2026",
+      "September 2026",
+      "October 2026",
+      "November 2026",
+      "December 2026",
+      "January 2027",
+      "February 2027"
+    ];
+
+    const state = {
+      available: [10319400, 10810800, 10810800, 10810800, 10810800, 10319400, 10810800, 11302200, 10319400, 9828000],
+      other: [400000, 400000, 40000, 10000, 100000, 0, 0, 0, 0, 0],
+      manpower: [1050, 1050, 1050, 1050, 1050, 1050, 1050, 1050, 1050, 1050],
+      shift: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12],
+      days: [21, 22, 22, 22, 22, 21, 22, 23, 21, 20],
+      styles: {
+        amazing: {
+          code: "STY-2026-002",
+          name: "Amazing Style",
+          required: 420000,
+          shipmentMonth: 6,
+          allocation: [50000, 0, 0, 0, 0, 0, 0, 500000, 0, 0]
+        },
+        awesome: {
+          code: "STY-2026-001",
+          name: "Awesome Style",
+          required: 450000,
+          shipmentMonth: 5,
+          allocation: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        }
+      }
+    };
+
+    const body = document.getElementById("capacityBody");
+    const toast = document.getElementById("toast");
+
+    function fmt(value) {
+      return Number(value || 0).toLocaleString("en-US");
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function styleTotal(key) {
+      return state.styles[key].allocation.reduce((sum, value) => sum + Number(value || 0), 0);
+    }
+
+    function vacant(index) {
+      const orderUsed = Object.values(state.styles).reduce((sum, style) => sum + Number(style.allocation[index] || 0), 0);
+      return state.available[index] - state.other[index] - orderUsed;
+    }
+
+    function row(label, cells, className = "") {
+      return `<tr class="${className}"><td><div class="row-label">${label}</div></td>${cells.map((cell) => `<td>${cell}</td>`).join("")}</tr>`;
+    }
+
+    function inputCell(kind, index, value, options = {}) {
+      const over = options.over ? " over" : "";
+      const active = options.active ? " active" : "";
+      return `<input class="cell-input${over}${active}" data-kind="${kind}" data-index="${index}" value="${Number(value || 0)}">`;
+    }
+
+    function renderTable() {
+      const rows = [];
+      rows.push(row("<strong>Available minutes</strong><span>Capacity before order allocation</span>", state.available.map((value) => `<span class="readonly">${fmt(value)}</span>`), "capacity-row"));
+      rows.push(row("<strong>Used by other orders</strong><span>Committed minutes</span>", state.other.map((value) => `<span class="readonly">${fmt(value)}</span>`)));
+
+      Object.entries(state.styles).forEach(([key, style]) => {
+        rows.push(row(
+          `<strong>Assign: ${style.name}</strong><span>${style.code} · ${fmt(style.required)} required</span>`,
+          style.allocation.map((value, index) => inputCell(key, index, value, { over: styleTotal(key) > style.required, active: Number(value) > 0 })),
+        ));
+      });
+
+      rows.push(row("<strong>Vacant after this order</strong><span>Available minus committed minutes</span>", months.map((_, index) => {
+        const value = vacant(index);
+        return `<span class="${value < 0 ? "negative" : "positive"}">${fmt(value)}</span>`;
+      }), "capacity-row"));
+      rows.push(row("<strong>Manpower</strong><span>Editable factory setting</span>", state.manpower.map((value, index) => inputCell("manpower", index, value))));
+      rows.push(row("<strong>Shift hours</strong><span>Factory capacity basis</span>", state.shift.map((value, index) => inputCell("shift", index, value))));
+      rows.push(row("<strong>Working days</strong><span>Calendar days in month</span>", state.days.map((value, index) => inputCell("days", index, value))));
+
+      body.innerHTML = rows.join("");
+    }
+
+    function renderSummary() {
+      const amazingTotal = styleTotal("amazing");
+      const awesomeTotal = styleTotal("awesome");
+      const required = state.styles.amazing.required + state.styles.awesome.required;
+      const allocated = amazingTotal + awesomeTotal;
+      const issues = [
+        amazingTotal > state.styles.amazing.required,
+        amazingTotal < state.styles.amazing.required,
+        awesomeTotal < state.styles.awesome.required
+      ].filter(Boolean).length;
+
+      document.getElementById("requiredTotal").textContent = fmt(required);
+      document.getElementById("allocatedTotal").textContent = fmt(allocated);
+      document.getElementById("allocationDelta").textContent = allocated >= required ? `${fmt(allocated - required)} minutes over required.` : `${fmt(required - allocated)} minutes remaining.`;
+      document.getElementById("vacancyTotal").textContent = `${(months.reduce((sum, _, index) => sum + Math.max(vacant(index), 0), 0) / 1000000).toFixed(1)}M`;
+      document.getElementById("amazingAllocated").textContent = fmt(amazingTotal);
+      document.getElementById("awesomeAllocated").textContent = fmt(awesomeTotal);
+
+      updateStyleBadge("amazing", amazingTotal);
+      updateStyleBadge("awesome", awesomeTotal);
+
+      const blocked = issues > 0;
+      document.getElementById("styleIssueCount").textContent = blocked ? `${issues} issues` : "Ready";
+      document.getElementById("styleIssueCount").className = `badge ${blocked ? "warn" : "ok"}`;
+      document.getElementById("saveTitle").textContent = blocked ? "Blocked" : "Ready";
+      document.getElementById("saveCopy").textContent = blocked ? "Resolve allocation shortages and overages before saving." : "All style requirements are exactly allocated.";
+      document.getElementById("saveBadge").textContent = blocked ? "Needs allocation" : "Can save";
+      document.getElementById("saveBadge").className = `badge ${blocked ? "error" : "ok"}`;
+      document.getElementById("saveHealth").classList.toggle("blocked", blocked);
+      document.getElementById("saveHealth").classList.toggle("warning", !blocked);
+      document.getElementById("saveBtn").classList.toggle("danger", blocked);
+    }
+
+    function updateStyleBadge(key, total) {
+      const style = state.styles[key];
+      const badge = document.getElementById(`${key}Badge`);
+      const progress = document.getElementById(`${key}Progress`);
+      const percent = Math.min((total / style.required) * 100, 100);
+      progress.style.width = `${percent}%`;
+      if (total === style.required) {
+        badge.textContent = "Ready";
+        badge.className = "badge ok";
+      } else if (total > style.required) {
+        badge.textContent = "Over";
+        badge.className = "badge warn";
+      } else {
+        badge.textContent = "Short";
+        badge.className = "badge error";
+      }
+    }
+
+    function render() {
+      renderTable();
+      renderSummary();
+    }
+
+    document.addEventListener("input", (event) => {
+      const input = event.target.closest("[data-kind]");
+      if (!input) return;
+      const kind = input.dataset.kind;
+      const index = Number(input.dataset.index);
+      const value = Number(input.value || 0);
+      if (state.styles[kind]) state.styles[kind].allocation[index] = value;
+      if (kind === "manpower") state.manpower[index] = value;
+      if (kind === "shift") state.shift[index] = value;
+      if (kind === "days") state.days[index] = value;
+      renderSummary();
+      document.querySelectorAll(`[data-index="${index}"][data-kind="${kind}"]`).forEach((el) => el.classList.toggle("active", Number(el.value) > 0));
+    });
+
+    document.addEventListener("click", (event) => {
+      const styleCard = event.target.closest(".style-card");
+      if (styleCard) {
+        document.querySelectorAll(".style-card").forEach((card) => card.classList.remove("active"));
+        styleCard.classList.add("active");
+        showToast(`${styleCard.querySelector("strong").textContent} selected.`);
+      }
+
+      if (event.target.closest("#autoBalance")) {
+        state.styles.amazing.allocation = [0, 0, 0, 0, 0, 0, 420000, 0, 0, 0];
+        state.styles.awesome.allocation = [0, 0, 0, 0, 0, 450000, 0, 0, 0, 0];
+        render();
+        showToast("Allocations balanced to shipment requirements.");
+      }
+
+      if (event.target.closest("#clearAllocations")) {
+        Object.values(state.styles).forEach((style) => style.allocation = style.allocation.map(() => 0));
+        render();
+        showToast("Order allocations cleared.");
+      }
+
+      if (event.target.closest("#editFactory")) {
+        showToast("Factory capacity inputs are editable in the Manpower, Shift hours, and Working days rows.");
+      }
+
+      if (event.target.closest("#saveBtn")) {
+        const ready = Object.values(state.styles).every((style) => styleTotal(Object.keys(state.styles).find((key) => state.styles[key] === style)) === style.required);
+        showToast(ready ? "Allocation saved." : "Cannot save yet. Resolve allocation issues first.");
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        document.getElementById("search").focus();
+      }
+    });
+
+    document.getElementById("search").addEventListener("input", (event) => {
+      const query = event.target.value.trim().toLowerCase();
+      document.querySelectorAll(".style-card").forEach((card) => {
+        card.style.display = card.textContent.toLowerCase().includes(query) || !query ? "" : "none";
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>

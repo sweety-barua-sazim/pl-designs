@@ -1,0 +1,1611 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Factory Configuration Canvas</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --line: #dbe3ee;
+      --line-strong: #c3cedc;
+      --text: #111827;
+      --muted: #64748b;
+      --subtle: #94a3b8;
+      --primary: #0f766e;
+      --primary-dark: #0b5f59;
+      --primary-soft: #e7f6f3;
+      --blue: #2563eb;
+      --blue-soft: #eaf1ff;
+      --green: #15803d;
+      --green-soft: #e8f7ed;
+      --orange: #b7791f;
+      --orange-soft: #fff5d6;
+      --red: #b42318;
+      --red-soft: #fff1f0;
+      --shadow: 0 18px 48px rgba(15, 23, 42, .08);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .topbar {
+      height: 58px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .94);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(10px);
+    }
+
+    .crumbs {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #526177;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .crumbs strong {
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .search {
+      position: relative;
+      width: min(360px, 32vw);
+    }
+
+    .search input {
+      width: 100%;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+      padding: 0 58px 0 36px;
+      outline: none;
+      color: var(--text);
+    }
+
+    .search .icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--subtle);
+    }
+
+    .search .shortcut {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 1px 7px;
+      color: #718096;
+      background: white;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .btn,
+    .icon-btn {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 12px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn:hover,
+    .icon-btn:hover {
+      border-color: var(--line-strong);
+      background: #f8fafc;
+    }
+
+    .btn.primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn.primary:hover {
+      border-color: var(--primary-dark);
+      background: var(--primary-dark);
+    }
+
+    .icon-btn {
+      width: 38px;
+      padding: 0;
+    }
+
+    .page {
+      width: min(1560px, calc(100% - 40px));
+      margin: 22px auto 38px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .page-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin: 6px 0 0;
+      max-width: 760px;
+    }
+
+    .head-controls,
+    .view-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .select {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: #344054;
+      padding: 0 10px;
+      font-weight: 700;
+    }
+
+    .notice {
+      border: 1px solid #c7d7ef;
+      border-radius: var(--radius);
+      background: #f4f8ff;
+      color: #36527c;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .canvas-panel {
+      overflow: hidden;
+    }
+
+    .canvas-toolbar {
+      min-height: 56px;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #fbfdff;
+    }
+
+    .legend {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--primary);
+    }
+
+    .dot.inactive {
+      background: var(--subtle);
+    }
+
+    .dot.machine {
+      background: var(--blue);
+    }
+
+    .canvas-scroll {
+      overflow-x: auto;
+      padding: 18px;
+      background:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 36px 36px;
+    }
+
+    .factory-canvas {
+      min-width: 1060px;
+      display: flex;
+      gap: 16px;
+      align-items: stretch;
+      padding-bottom: 4px;
+    }
+
+    .floor-column {
+      width: 340px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .88);
+      display: flex;
+      flex-direction: column;
+      min-height: 620px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
+    }
+
+    .floor-head {
+      border-bottom: 1px solid var(--line);
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .drag {
+      color: #718096;
+      cursor: grab;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .node-title {
+      min-width: 0;
+    }
+
+    .node-title strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .node-title span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .floor-body {
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .unit-card,
+    .line-row {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+    }
+
+    .unit-card[data-status="INACTIVE"],
+    .line-row[data-status="INACTIVE"] {
+      border-color: #d8dee8;
+      color: #667085;
+      background: #f8fafc;
+    }
+
+    .unit-card.selected,
+    .line-row.selected,
+    .floor-column.selected {
+      border-color: var(--blue);
+      background: #f8fbff;
+      box-shadow: 0 0 0 3px var(--blue-soft);
+    }
+
+    .unit-head,
+    .line-head {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .line-row {
+      margin: 10px;
+      background: #fbfdff;
+    }
+
+    .line-body {
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .machine-chip {
+      border: 1px solid #cbd9e8;
+      border-radius: 999px;
+      padding: 6px 9px;
+      background: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .machine-chip.selected {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      color: #1d4ed8;
+    }
+
+    .machine-chip.inactive {
+      color: #667085;
+      background: #f1f5f9;
+    }
+
+    .badges {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .node-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 0 10px 10px 38px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .unit-card.collapsed .line-row,
+    .line-row.collapsed .line-body {
+      display: none;
+    }
+
+    .node-toggle {
+      width: 24px;
+      height: 24px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: white;
+      display: grid;
+      place-items: center;
+      color: #526177;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .canvas-node.is-dimmed {
+      opacity: .32;
+    }
+
+    .canvas-node.is-match {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 900;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .badge.active {
+      color: var(--green);
+      background: var(--green-soft);
+      border-color: #bfe7ca;
+    }
+
+    .badge.inactive {
+      color: #667085;
+      background: #eef2f7;
+      border-color: #d8dee8;
+    }
+
+    .badge.work {
+      color: #1d4ed8;
+      background: var(--blue-soft);
+      border-color: #c8d8fb;
+    }
+
+    .more {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      display: grid;
+      place-items: center;
+      color: #526177;
+      cursor: pointer;
+    }
+
+    .add-drop {
+      min-height: 72px;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: #fbfdff;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+    }
+
+    .details {
+      position: sticky;
+      top: 74px;
+      max-height: calc(100vh - 96px);
+      overflow: auto;
+      display: none;
+    }
+
+    .details.open {
+      display: block;
+      animation: slideIn .18s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .details-head {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+    }
+
+    .details-head h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .details-head span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .details-body {
+      padding: 14px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .field label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 5px;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--text);
+      padding: 0 10px;
+      outline: none;
+    }
+
+    .field textarea {
+      min-height: 76px;
+      padding: 9px 10px;
+      resize: vertical;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 9px;
+      background: #f8fafc;
+      color: #344054;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: #fbfdff;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 18px;
+      margin-top: 2px;
+    }
+
+    .validation {
+      border-radius: var(--radius);
+      border: 1px solid #f0dda6;
+      background: var(--orange-soft);
+      color: #764d11;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .menu-preview {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .menu-preview div {
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 11px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 700;
+      color: #344054;
+    }
+
+    .menu-preview div:last-child {
+      border-bottom: 0;
+      color: var(--red);
+    }
+
+    .empty-state {
+      display: none;
+      min-height: 460px;
+      place-items: center;
+      text-align: center;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .74);
+      color: var(--muted);
+      padding: 24px;
+    }
+
+    .empty-state strong {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, .32);
+      display: none;
+      place-items: center;
+      z-index: 40;
+      padding: 18px;
+    }
+
+    .modal-backdrop.open {
+      display: grid;
+    }
+
+    .modal {
+      width: min(560px, 100%);
+      border-radius: 8px;
+      background: white;
+      border: 1px solid var(--line);
+      box-shadow: 0 26px 80px rgba(15, 23, 42, .24);
+    }
+
+    .modal h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .modal-head,
+    .modal-foot {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .modal-foot {
+      border-top: 1px solid var(--line);
+      border-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .modal-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .bulk-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .bulk-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: white;
+      background: #111827;
+      box-shadow: 0 20px 52px rgba(15, 23, 42, .24);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: .2s ease;
+      z-index: 50;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .detail-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn.danger {
+      color: var(--red);
+      border-color: #fecaca;
+      background: var(--red-soft);
+    }
+
+    .context-menu {
+      position: fixed;
+      width: 210px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 20px 52px rgba(15, 23, 42, .18);
+      padding: 6px;
+      display: none;
+      z-index: 60;
+    }
+
+    .context-menu.open {
+      display: grid;
+    }
+
+    .context-menu button {
+      min-height: 34px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      text-align: left;
+      padding: 0 9px;
+      color: #344054;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .context-menu button:hover {
+      background: #f3f7fb;
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .details {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar,
+      .page-head {
+        grid-template-columns: 1fr;
+        height: auto;
+        display: grid;
+        padding: 12px;
+      }
+
+      .page {
+        width: calc(100% - 24px);
+      }
+
+      .search {
+        width: 100%;
+      }
+
+      .top-actions,
+      .head-controls,
+      .view-controls,
+      .canvas-toolbar {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .split,
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <span>▣ Dashboard</span>
+      <span>›</span>
+      <span>Factory</span>
+      <span>›</span>
+      <strong>Factory Configuration</strong>
+    </nav>
+    <div class="top-actions">
+      <label class="search">
+        <span class="icon">⌕</span>
+        <input id="searchInput" aria-label="Search factory layout" placeholder="Search floor, unit, line, machine...">
+        <span class="shortcut">/</span>
+      </label>
+      <button class="icon-btn" aria-label="Notifications">⌁</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="page-head">
+      <div>
+        <h1>Main Factory Configuration</h1>
+        <p class="subtitle">Factory is read-only in this module. Industrial Engineers can configure production floors, units, lines, and machines for the selected month.</p>
+      </div>
+      <div class="head-controls">
+        <select class="select" aria-label="Month">
+          <option>June 2026</option>
+          <option>July 2026</option>
+          <option>August 2026</option>
+        </select>
+        <button class="btn primary" id="openAddFloor">Add Floor</button>
+        <button class="btn" id="openBulkAdd">Bulk Add</button>
+        <button class="icon-btn" aria-label="View options">⚙</button>
+      </div>
+    </section>
+
+    <div class="notice">
+      <span><strong>Main Factory</strong> is owned by the Tech Department module. Add and maintain child production layout nodes here.</span>
+      <div class="view-controls">
+        <span class="badge active">Industrial Engineer · Full Access</span>
+        <select class="select" aria-label="Status filter">
+          <option>All statuses</option>
+          <option>Active only</option>
+          <option>Inactive only</option>
+        </select>
+        <select class="select" aria-label="Work type filter">
+          <option>All work types</option>
+          <option>Sewing</option>
+          <option>Finishing</option>
+          <option>Cutting</option>
+        </select>
+      </div>
+    </div>
+
+    <section class="workspace">
+      <section class="panel canvas-panel">
+        <div class="canvas-toolbar">
+          <div class="legend">
+            <span class="legend-item"><span class="dot"></span>Active node</span>
+            <span class="legend-item"><span class="dot inactive"></span>Inactive node</span>
+            <span class="legend-item"><span class="dot machine"></span>Machine</span>
+          </div>
+          <div class="view-controls">
+            <button class="btn">Fit View</button>
+            <button class="btn">Show Inactive</button>
+            <button class="btn">Validate Layout</button>
+          </div>
+        </div>
+
+        <div class="canvas-scroll">
+          <div class="factory-canvas" aria-label="Factory hierarchy canvas">
+            <article class="floor-column canvas-node" data-type="floor" data-name="Floor 1" data-work="Sewing, Finishing" data-status="ACTIVE" data-supervisor="Amina Rahman" data-shift="8" data-manpower="184" data-production="42,600 pcs" data-created-by="Tech Department" data-created-date="01 Jun 2026" data-updated="12 Jun 2026" data-efficiency="84%">
+              <header class="floor-head">
+                <span class="drag" title="Drag to reorder">⋮⋮</span>
+                <div class="node-title">
+                  <strong>Floor 1</strong>
+                  <span>Production Floor</span>
+                </div>
+                <div class="badges"><span class="badge active">Active</span><button class="more" aria-label="Floor actions">⋮</button></div>
+              </header>
+              <div class="floor-body">
+                <section class="unit-card canvas-node collapsed" data-type="unit" data-name="Unit A" data-work="Sewing" data-status="ACTIVE" data-supervisor="Rahim Uddin" data-shift="8" data-manpower="96" data-production="22,800 pcs" data-created-by="Amina Rahman" data-created-date="02 Jun 2026" data-updated="12 Jun 2026" data-efficiency="81%">
+                  <div class="unit-head">
+                    <button class="node-toggle" type="button" aria-label="Expand Unit A">›</button>
+                    <div class="node-title"><strong>Unit A</strong><span>Production Unit</span></div>
+                    <div class="badges"><span class="badge work">Sewing</span><span class="badge active">Active</span><button class="more" aria-label="Unit actions">⋮</button></div>
+                  </div>
+                  <div class="node-stats"><span>Supervisor: Rahim Uddin</span><span>Shift: 8h</span><span>Lines: 2</span><span>Manpower: 96</span></div>
+                  <article class="line-row canvas-node collapsed" data-type="line" data-name="Line A1" data-work="Sewing" data-status="ACTIVE" data-supervisor="Samiha Islam" data-shift="8" data-manpower="48" data-production="11,400 pcs" data-created-by="Rahim Uddin" data-created-date="03 Jun 2026" data-updated="12 Jun 2026" data-efficiency="86%">
+                    <div class="line-head">
+                      <button class="node-toggle" type="button" aria-label="Expand Line A1">›</button>
+                      <div class="node-title"><strong>Line A1</strong><span>Production Line</span></div>
+                      <div class="badges"><span class="badge work">Sewing</span><span class="badge active">Active</span><button class="more" aria-label="Line actions">⋮</button></div>
+                    </div>
+                    <div class="node-stats"><span>Supervisor: Samiha Islam</span><span>Shift: 8h</span><span>Machines: 3</span><span>Manpower: 48</span></div>
+                    <div class="line-body">
+                      <button class="machine-chip canvas-node" title="SN Machine&#10;Single Needle&#10;Juki DDL-8700&#10;ACTIVE" data-type="machine" data-name="SN-01" data-machine-type="Single Needle" data-model="Juki DDL-8700" data-status="ACTIVE" data-usage="86%" data-capacity="2,400 pcs" data-created-by="Samiha Islam" data-created-date="04 Jun 2026" data-updated="12 Jun 2026">SN-01 · Single Needle</button>
+                      <button class="machine-chip canvas-node" title="Overlock-01&#10;Overlock&#10;Brother 737&#10;ACTIVE" data-type="machine" data-name="Overlock-01" data-machine-type="Overlock" data-model="Brother 737" data-status="ACTIVE" data-usage="72%" data-capacity="1,900 pcs" data-created-by="Samiha Islam" data-created-date="04 Jun 2026" data-updated="12 Jun 2026">Overlock-01 · Overlock</button>
+                      <button class="machine-chip canvas-node" title="Flatlock-01&#10;Flatlock&#10;Kansai W-8103&#10;ACTIVE" data-type="machine" data-name="Flatlock-01" data-machine-type="Flatlock" data-model="Kansai W-8103" data-status="ACTIVE" data-usage="68%" data-capacity="1,650 pcs" data-created-by="Samiha Islam" data-created-date="04 Jun 2026" data-updated="12 Jun 2026">Flatlock-01 · Flatlock</button>
+                    </div>
+                  </article>
+                  <article class="line-row canvas-node collapsed" data-type="line" data-name="Line A2" data-work="Sewing" data-status="ACTIVE" data-supervisor="Nasir Hossain" data-shift="8" data-manpower="44" data-production="10,200 pcs" data-created-by="Rahim Uddin" data-created-date="03 Jun 2026" data-updated="12 Jun 2026" data-efficiency="79%">
+                    <div class="line-head">
+                      <button class="node-toggle" type="button" aria-label="Expand Line A2">›</button>
+                      <div class="node-title"><strong>Line A2</strong><span>Production Line</span></div>
+                      <div class="badges"><span class="badge work">Sewing</span><span class="badge active">Active</span><button class="more" aria-label="Line actions">⋮</button></div>
+                    </div>
+                    <div class="node-stats"><span>Supervisor: Nasir Hossain</span><span>Shift: 8h</span><span>Machines: 2</span><span>Manpower: 44</span></div>
+                    <div class="line-body">
+                      <button class="machine-chip canvas-node" title="SN-02&#10;Single Needle&#10;Juki DDL-8700&#10;ACTIVE" data-type="machine" data-name="SN-02" data-machine-type="Single Needle" data-model="Juki DDL-8700" data-status="ACTIVE" data-usage="77%" data-capacity="2,200 pcs">SN-02 · Single Needle</button>
+                      <button class="machine-chip canvas-node" title="Button Hole-01&#10;Button Hole&#10;Juki LBH-1790&#10;ACTIVE" data-type="machine" data-name="Button Hole-01" data-machine-type="Button Hole" data-model="Juki LBH-1790" data-status="ACTIVE" data-usage="61%" data-capacity="1,100 pcs">Button Hole-01 · Button Hole</button>
+                    </div>
+                  </article>
+                </section>
+
+                <section class="unit-card canvas-node collapsed" data-type="unit" data-name="Unit B" data-work="Finishing" data-status="INACTIVE" data-supervisor="Free text: Kamal" data-shift="7.5" data-manpower="64" data-production="19,800 pcs" data-created-by="Amina Rahman" data-created-date="02 Jun 2026" data-updated="10 Jun 2026" data-efficiency="0%">
+                  <div class="unit-head">
+                    <button class="node-toggle" type="button" aria-label="Expand Unit B">›</button>
+                    <div class="node-title"><strong>Unit B</strong><span>Production Unit</span></div>
+                    <div class="badges"><span class="badge work">Finishing</span><span class="badge inactive">Inactive</span><button class="more" aria-label="Unit actions">⋮</button></div>
+                  </div>
+                  <div class="node-stats"><span>Supervisor: Kamal</span><span>Shift: 7.5h</span><span>Lines: 1</span><span>Manpower: 64</span></div>
+                  <article class="line-row canvas-node collapsed" data-type="line" data-name="Line B1" data-work="Finishing" data-status="INACTIVE" data-supervisor="Kamal" data-shift="7.5" data-manpower="32" data-production="9,300 pcs" data-created-by="Kamal" data-created-date="04 Jun 2026" data-updated="10 Jun 2026" data-efficiency="0%">
+                    <div class="line-head">
+                      <button class="node-toggle" type="button" aria-label="Expand Line B1">›</button>
+                      <div class="node-title"><strong>Line B1</strong><span>Production Line</span></div>
+                      <div class="badges"><span class="badge work">Finishing</span><span class="badge inactive">Inactive</span><button class="more" aria-label="Line actions">⋮</button></div>
+                    </div>
+                    <div class="node-stats"><span>Supervisor: Kamal</span><span>Shift: 7.5h</span><span>Machines: 1</span><span>Manpower: 32</span></div>
+                    <div class="line-body">
+                      <button class="machine-chip canvas-node inactive" title="Thread Trimmer-01&#10;Trimmer&#10;Pegasus WT500&#10;INACTIVE" data-type="machine" data-name="Thread Trimmer-01" data-machine-type="Trimmer" data-model="Pegasus WT500" data-status="INACTIVE" data-usage="0%" data-capacity="0 pcs" data-created-by="Kamal" data-created-date="05 Jun 2026" data-updated="10 Jun 2026">Thread Trimmer-01 · Trimmer</button>
+                    </div>
+                  </article>
+                </section>
+                <button class="add-drop">+ Add Unit under Floor 1</button>
+              </div>
+            </article>
+
+            <article class="floor-column canvas-node" data-type="floor" data-name="Floor 2" data-work="Cutting" data-status="ACTIVE" data-supervisor="Mina Chowdhury" data-shift="8" data-manpower="88" data-production="18,400 pcs" data-created-by="Tech Department" data-created-date="01 Jun 2026" data-updated="12 Jun 2026" data-efficiency="78%">
+              <header class="floor-head">
+                <span class="drag" title="Drag to reorder">⋮⋮</span>
+                <div class="node-title">
+                  <strong>Floor 2</strong>
+                  <span>Production Floor</span>
+                </div>
+                <div class="badges"><span class="badge active">Active</span><button class="more" aria-label="Floor actions">⋮</button></div>
+              </header>
+              <div class="floor-body">
+                <section class="unit-card canvas-node collapsed" data-type="unit" data-name="Unit C" data-work="Cutting" data-status="ACTIVE" data-supervisor="Jamal Khan" data-shift="8" data-manpower="54" data-production="12,900 pcs" data-created-by="Mina Chowdhury" data-created-date="02 Jun 2026" data-updated="12 Jun 2026" data-efficiency="82%">
+                  <div class="unit-head">
+                    <button class="node-toggle" type="button" aria-label="Expand Unit C">›</button>
+                    <div class="node-title"><strong>Unit C</strong><span>Production Unit</span></div>
+                    <div class="badges"><span class="badge work">Cutting</span><span class="badge active">Active</span><button class="more" aria-label="Unit actions">⋮</button></div>
+                  </div>
+                  <div class="node-stats"><span>Supervisor: Jamal Khan</span><span>Shift: 8h</span><span>Lines: 1</span><span>Manpower: 54</span></div>
+                  <article class="line-row canvas-node collapsed" data-type="line" data-name="Line C1" data-work="Cutting" data-status="ACTIVE" data-supervisor="Jamal Khan" data-shift="8" data-manpower="28" data-production="6,800 pcs" data-created-by="Jamal Khan" data-created-date="03 Jun 2026" data-updated="12 Jun 2026" data-efficiency="83%">
+                    <div class="line-head">
+                      <button class="node-toggle" type="button" aria-label="Expand Line C1">›</button>
+                      <div class="node-title"><strong>Line C1</strong><span>Production Line</span></div>
+                      <div class="badges"><span class="badge work">Cutting</span><span class="badge active">Active</span><button class="more" aria-label="Line actions">⋮</button></div>
+                    </div>
+                    <div class="node-stats"><span>Supervisor: Jamal Khan</span><span>Shift: 8h</span><span>Machines: 2</span><span>Manpower: 28</span></div>
+                    <div class="line-body">
+                      <button class="machine-chip canvas-node" title="Cutting-01&#10;Cutting&#10;Eastman Blue Streak II&#10;ACTIVE" data-type="machine" data-name="Cutting-01" data-machine-type="Cutting" data-model="Eastman Blue Streak II" data-status="ACTIVE" data-usage="80%" data-capacity="3,200 pcs">Cutting-01 · Cutting</button>
+                      <button class="machine-chip canvas-node" title="Fusing-01&#10;Fusing&#10;Hashima HP-450MS&#10;ACTIVE" data-type="machine" data-name="Fusing-01" data-machine-type="Fusing" data-model="Hashima HP-450MS" data-status="ACTIVE" data-usage="66%" data-capacity="2,700 pcs">Fusing-01 · Fusing</button>
+                    </div>
+                  </article>
+                </section>
+                <button class="add-drop">+ Add Unit under Floor 2</button>
+              </div>
+            </article>
+
+            <article class="floor-column">
+              <header class="floor-head">
+                <span class="drag">+</span>
+                <div class="node-title">
+                  <strong>Add Production Floor</strong>
+                  <span>Create up to 10 floors with Bulk Add</span>
+                </div>
+                <button class="more" aria-label="Add floor">+</button>
+              </header>
+              <div class="floor-body">
+                <div class="empty-state" style="display:grid">
+                  <div>
+                    <strong>No production layout configured.</strong>
+                    <span>Start by creating your first production floor.</span>
+                    <div style="margin-top:14px"><button class="btn primary">Add Production Floor</button></div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel details" aria-label="Node detail panel">
+        <div class="details-head">
+          <div>
+            <h2 id="detailName">SN Machine</h2>
+            <span id="detailType">Machine</span>
+          </div>
+          <button class="more" aria-label="Node actions">⋮</button>
+        </div>
+        <div class="details-body">
+          <div class="form-grid" id="detailFields"></div>
+          <div class="metric-grid" id="detailMetrics"></div>
+          <div class="validation">
+            Selected work types must be included in the parent’s work types.
+          </div>
+          <div>
+            <div class="field">
+              <label>More Menu Preview</label>
+              <div class="menu-preview">
+                <div>Rename</div>
+                <div>Add child</div>
+                <div>Bulk add siblings</div>
+                <div>Deactivate / Reactivate</div>
+                <div>Reactivate: IMMEDIATE / ALL</div>
+                <div>Soft delete</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="addModal" role="dialog" aria-modal="true" aria-label="Add node">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="addModalTitle">Add Production Floor</h2>
+        <button class="icon-btn modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="field"><label>Parent</label><input id="addParent" value="Main Factory" readonly></div>
+        <div class="field"><label>Creating</label><input id="addType" value="Production Floor" readonly></div>
+        <div class="field"><label>Name *</label><input id="addName" value="Floor 3"></div>
+        <div class="field" id="addWorkField"><label>Work Types *</label><input id="addWork" value="Sewing, Finishing"></div>
+        <div class="field" id="addMachineTypeField" style="display:none"><label>Machine Type *</label><input id="addMachineType" list="machineTypes" value="Single Needle"></div>
+        <div class="field" id="addModelField" style="display:none"><label>Machine Model</label><input id="addModel" list="machineModels" value="Juki DDL-8700"></div>
+        <div class="split">
+          <div class="field" id="addSupervisorField"><label>Supervisor</label><input id="addSupervisor" placeholder="Existing member or free-text name"></div>
+          <div class="field" id="addShiftField"><label>Shift Length</label><input id="addShift" value="8"></div>
+        </div>
+        <div class="validation" id="addValidation">After save: append to end, set display_order = last + 1, select the new node, and open this panel.</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn modal-close" type="button">Cancel</button>
+        <button class="btn primary modal-save" type="button">Save Floor</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="bulkModal" role="dialog" aria-modal="true" aria-label="Bulk add siblings">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Bulk Add Sibling Nodes</h2>
+        <button class="icon-btn modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="field"><label>Parent</label><input value="Unit A" readonly></div>
+        <div class="field"><label>Creating</label><input value="Production Lines" readonly></div>
+        <div class="bulk-grid">
+          <div class="bulk-row"><input value="Line A3"><input value="Sewing"></div>
+          <div class="bulk-row"><input value="Line A4"><input value="Sewing"></div>
+          <div class="bulk-row"><input value="Line A5"><input value="Sewing"></div>
+        </div>
+        <button class="btn" id="addBulkRow" type="button">Add Row</button>
+        <div class="validation">Maximum 10 rows. Validation applies to every row before submit.</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn modal-close" type="button">Cancel</button>
+        <button class="btn primary modal-save" type="button">Create 3 Lines</button>
+      </div>
+    </div>
+  </div>
+
+  <datalist id="machineTypes">
+    <option value="Single Needle"></option>
+    <option value="Overlock"></option>
+    <option value="Flatlock"></option>
+    <option value="Button Hole"></option>
+    <option value="Cutting"></option>
+    <option value="Fusing"></option>
+  </datalist>
+  <datalist id="machineModels">
+    <option value="Juki DDL-8700"></option>
+    <option value="Brother 737"></option>
+    <option value="Kansai W-8103"></option>
+    <option value="Juki LBH-1790"></option>
+    <option value="Eastman Blue Streak II"></option>
+    <option value="Hashima HP-450MS"></option>
+  </datalist>
+
+  <div class="context-menu" id="contextMenu" aria-label="Node context menu">
+    <button data-menu-action="rename" type="button">Rename</button>
+    <button data-menu-action="add-child" type="button">Add child</button>
+    <button data-menu-action="bulk-add" type="button">Bulk add siblings</button>
+    <button data-menu-action="toggle-status" type="button">Deactivate / Reactivate</button>
+    <button data-menu-action="delete" type="button">Soft delete</button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">Updated</div>
+
+  <script>
+    const searchInput = document.getElementById("searchInput");
+    const detailPanel = document.querySelector(".details");
+    const detailName = document.getElementById("detailName");
+    const detailType = document.getElementById("detailType");
+    const detailFields = document.getElementById("detailFields");
+    const detailMetrics = document.getElementById("detailMetrics");
+    const toast = document.getElementById("toast");
+    const canvas = document.querySelector(".factory-canvas");
+    const contextMenu = document.getElementById("contextMenu");
+    const addModal = document.getElementById("addModal");
+    const bulkModal = document.getElementById("bulkModal");
+    const addState = { parentId: null, type: "floor" };
+    let selectedId = null;
+    let idCounter = 100;
+
+    const layout = [
+      {
+        id: "floor-1", type: "floor", name: "Floor 1", work: "Sewing, Finishing", status: "ACTIVE", supervisor: "Amina Rahman", shift: "8", manpower: "184", capacity: "42,600 pcs", efficiency: "84%", expanded: true, children: [
+          { id: "unit-a", type: "unit", name: "Unit A", work: "Sewing", status: "ACTIVE", supervisor: "Rahim Uddin", shift: "8", manpower: "96", capacity: "22,800 pcs", efficiency: "81%", expanded: false, children: [
+            { id: "line-a1", type: "line", name: "Line A1", work: "Sewing", status: "ACTIVE", supervisor: "Samiha Islam", shift: "8", manpower: "48", capacity: "11,400 pcs", efficiency: "86%", expanded: false, children: [
+              { id: "machine-sn-01", type: "machine", name: "SN-01", machineType: "Single Needle", model: "Juki DDL-8700", status: "ACTIVE", usage: "86%", capacity: "2,400 pcs" },
+              { id: "machine-overlock-01", type: "machine", name: "Overlock-01", machineType: "Overlock", model: "Brother 737", status: "ACTIVE", usage: "72%", capacity: "1,900 pcs" },
+              { id: "machine-flatlock-01", type: "machine", name: "Flatlock-01", machineType: "Flatlock", model: "Kansai W-8103", status: "ACTIVE", usage: "68%", capacity: "1,650 pcs" }
+            ]},
+            { id: "line-a2", type: "line", name: "Line A2", work: "Sewing", status: "ACTIVE", supervisor: "Nasir Hossain", shift: "8", manpower: "44", capacity: "10,200 pcs", efficiency: "79%", expanded: false, children: [
+              { id: "machine-sn-02", type: "machine", name: "SN-02", machineType: "Single Needle", model: "Juki DDL-8700", status: "ACTIVE", usage: "77%", capacity: "2,200 pcs" },
+              { id: "machine-button-hole-01", type: "machine", name: "Button Hole-01", machineType: "Button Hole", model: "Juki LBH-1790", status: "ACTIVE", usage: "61%", capacity: "1,100 pcs" }
+            ]}
+          ]},
+          { id: "unit-b", type: "unit", name: "Unit B", work: "Finishing", status: "INACTIVE", supervisor: "Kamal", shift: "7.5", manpower: "64", capacity: "19,800 pcs", efficiency: "0%", expanded: false, children: [
+            { id: "line-b1", type: "line", name: "Line B1", work: "Finishing", status: "INACTIVE", supervisor: "Kamal", shift: "7.5", manpower: "32", capacity: "9,300 pcs", efficiency: "0%", expanded: false, children: [
+              { id: "machine-trimmer-01", type: "machine", name: "Thread Trimmer-01", machineType: "Trimmer", model: "Pegasus WT500", status: "INACTIVE", usage: "0%", capacity: "0 pcs" }
+            ]}
+          ]}
+        ]
+      },
+      {
+        id: "floor-2", type: "floor", name: "Floor 2", work: "Cutting", status: "ACTIVE", supervisor: "Mina Chowdhury", shift: "8", manpower: "88", capacity: "18,400 pcs", efficiency: "78%", expanded: true, children: [
+          { id: "unit-c", type: "unit", name: "Unit C", work: "Cutting", status: "ACTIVE", supervisor: "Jamal Khan", shift: "8", manpower: "54", capacity: "12,900 pcs", efficiency: "82%", expanded: false, children: [
+            { id: "line-c1", type: "line", name: "Line C1", work: "Cutting", status: "ACTIVE", supervisor: "Jamal Khan", shift: "8", manpower: "28", capacity: "6,800 pcs", efficiency: "83%", expanded: false, children: [
+              { id: "machine-cutting-01", type: "machine", name: "Cutting-01", machineType: "Cutting", model: "Eastman Blue Streak II", status: "ACTIVE", usage: "80%", capacity: "3,200 pcs" },
+              { id: "machine-fusing-01", type: "machine", name: "Fusing-01", machineType: "Fusing", model: "Hashima HP-450MS", status: "ACTIVE", usage: "66%", capacity: "2,700 pcs" }
+            ]}
+          ]}
+        ]
+      }
+    ];
+
+    function escapeHtml(value = "") {
+      return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function findNode(id, nodes = layout, parent = null) {
+      for (const node of nodes) {
+        if (node.id === id) return { node, parent, siblings: nodes };
+        if (node.children) {
+          const found = findNode(id, node.children, node);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    function activeSiblingNameExists(parentId, name, excludeId = null) {
+      const siblings = parentId ? findNode(parentId).node.children || [] : layout;
+      return siblings.some((node) => node.id !== excludeId && node.status !== "DELETED" && node.name.toLowerCase() === name.toLowerCase());
+    }
+
+    function nextType(type) {
+      return { floor: "unit", unit: "line", line: "machine" }[type] || "floor";
+    }
+
+    function labelFor(type) {
+      return { floor: "Production Floor", unit: "Production Unit", line: "Production Line", machine: "Machine" }[type] || type;
+    }
+
+    function badge(status) {
+      const inactive = status === "INACTIVE";
+      return `<span class="badge ${inactive ? "inactive" : "active"}">${inactive ? "Inactive" : "Active"}</span>`;
+    }
+
+    function renderMachine(machine) {
+      const inactive = machine.status === "INACTIVE";
+      const selected = selectedId === machine.id ? " selected" : "";
+      return `<button class="machine-chip canvas-node${inactive ? " inactive" : ""}${selected}" title="${escapeHtml(machine.name)}&#10;${escapeHtml(machine.machineType)}&#10;${escapeHtml(machine.model || "")}&#10;${machine.status}" data-id="${machine.id}" data-type="machine">${escapeHtml(machine.name)} · ${escapeHtml(machine.machineType || "Machine")}</button>`;
+    }
+
+    function renderLine(line) {
+      const selected = selectedId === line.id ? " selected" : "";
+      const collapsed = line.expanded ? "" : " collapsed";
+      return `<article class="line-row canvas-node${collapsed}${selected}" data-id="${line.id}" data-type="line" data-status="${line.status}">
+        <div class="line-head">
+          <button class="node-toggle" type="button">${line.expanded ? "⌄" : "›"}</button>
+          <div class="node-title"><strong>${escapeHtml(line.name)}</strong><span>Production Line</span></div>
+          <div class="badges"><span class="badge work">${escapeHtml(line.work)}</span>${badge(line.status)}<button class="more" aria-label="Line actions">⋮</button></div>
+        </div>
+        <div class="node-stats"><span>Supervisor: ${escapeHtml(line.supervisor || "Unassigned")}</span><span>Shift: ${escapeHtml(line.shift || "8")}h</span><span>Machines: ${(line.children || []).length}</span><span>Manpower: ${escapeHtml(line.manpower || "0")}</span></div>
+        <div class="line-body">${(line.children || []).filter((child) => child.status !== "DELETED").map(renderMachine).join("")}<button class="machine-chip" data-add-child="${line.id}">+ Add Machine</button></div>
+      </article>`;
+    }
+
+    function renderUnit(unit) {
+      const selected = selectedId === unit.id ? " selected" : "";
+      const collapsed = unit.expanded ? "" : " collapsed";
+      return `<section class="unit-card canvas-node${collapsed}${selected}" data-id="${unit.id}" data-type="unit" data-status="${unit.status}">
+        <div class="unit-head">
+          <button class="node-toggle" type="button">${unit.expanded ? "⌄" : "›"}</button>
+          <div class="node-title"><strong>${escapeHtml(unit.name)}</strong><span>Production Unit</span></div>
+          <div class="badges"><span class="badge work">${escapeHtml(unit.work)}</span>${badge(unit.status)}<button class="more" aria-label="Unit actions">⋮</button></div>
+        </div>
+        <div class="node-stats"><span>Supervisor: ${escapeHtml(unit.supervisor || "Unassigned")}</span><span>Shift: ${escapeHtml(unit.shift || "8")}h</span><span>Lines: ${(unit.children || []).filter((line) => line.status !== "DELETED").length}</span><span>Manpower: ${escapeHtml(unit.manpower || "0")}</span></div>
+        ${(unit.children || []).filter((child) => child.status !== "DELETED").map(renderLine).join("")}
+      </section>`;
+    }
+
+    function renderFloor(floor) {
+      const selected = selectedId === floor.id ? " selected" : "";
+      return `<article class="floor-column canvas-node${selected}" data-id="${floor.id}" data-type="floor" data-status="${floor.status}">
+        <header class="floor-head">
+          <span class="drag" title="Click to simulate reorder">⋮⋮</span>
+          <div class="node-title"><strong>${escapeHtml(floor.name)}</strong><span>Production Floor</span></div>
+          <div class="badges">${badge(floor.status)}<button class="more" aria-label="Floor actions">⋮</button></div>
+        </header>
+        <div class="node-stats"><span>Supervisor: ${escapeHtml(floor.supervisor || "Unassigned")}</span><span>Shift: ${escapeHtml(floor.shift || "8")}h</span><span>Units: ${(floor.children || []).filter((unit) => unit.status !== "DELETED").length}</span><span>Manpower: ${escapeHtml(floor.manpower || "0")}</span></div>
+        <div class="floor-body">
+          ${(floor.children || []).filter((child) => child.status !== "DELETED").map(renderUnit).join("")}
+          <button class="add-drop" data-add-child="${floor.id}">+ Add Unit under ${escapeHtml(floor.name)}</button>
+        </div>
+      </article>`;
+    }
+
+    function renderCanvas() {
+      canvas.innerHTML = layout.filter((floor) => floor.status !== "DELETED").map(renderFloor).join("") + `<article class="floor-column"><header class="floor-head"><span class="drag">+</span><div class="node-title"><strong>Add Production Floor</strong><span>Create up to 10 floors with Bulk Add</span></div><button class="more" id="quickAddFloor" aria-label="Add floor">+</button></header><div class="floor-body"><div class="empty-state" style="display:grid"><div><strong>No production layout configured.</strong><span>Start by creating your first production floor.</span><div style="margin-top:14px"><button class="btn primary" id="emptyAddFloor">Add Production Floor</button></div></div></div></div></article>`;
+      applySearch();
+    }
+
+    function field(label, value, key, type = "input") {
+      if (type === "select") {
+        return `<div class="field"><label>${label}</label><select data-edit="${key}"><option>${value}</option><option>ACTIVE</option><option>INACTIVE</option></select></div>`;
+      }
+      return `<div class="field"><label>${label}</label><input data-edit="${key}" value="${escapeHtml(value)}"></div>`;
+    }
+
+    function metric(label, value) {
+      return `<div class="metric"><span>${label}</span><strong>${escapeHtml(value)}</strong></div>`;
+    }
+
+    function selectNode(id) {
+      selectedId = id;
+      const found = findNode(id);
+      if (!found) return;
+      const node = found.node;
+      detailPanel.classList.add("open");
+      detailPanel.querySelector(".detail-actions")?.remove();
+      detailName.textContent = node.name;
+      detailType.textContent = labelFor(node.type);
+      if (node.type === "machine") {
+        detailFields.innerHTML = [
+          field("Machine name", node.name, "name"),
+          field("Machine type", node.machineType || "", "machineType"),
+          field("Machine model", node.model || "", "model"),
+          field("Status", node.status, "status", "select"),
+          field("Created by", node.createdBy || "Planning Admin", "createdBy"),
+          field("Created date", node.createdDate || "01 Jun 2026", "createdDate"),
+          field("Last updated", node.updated || "12 Jun 2026", "updated")
+        ].join("");
+        detailMetrics.innerHTML = [metric("Monthly capacity", node.capacity || "0 pcs"), metric("Monthly utilization", node.usage || "0%")].join("");
+      } else {
+        detailFields.innerHTML = [
+          field("Name", node.name, "name"),
+          field("Supervisor", node.supervisor || "", "supervisor"),
+          field("Shift length", `${node.shift || "8"}`, "shift"),
+          field("Work types", node.work || "", "work"),
+          field("Status", node.status, "status", "select"),
+          field("Created by", node.createdBy || "Planning Admin", "createdBy"),
+          field("Created date", node.createdDate || "01 Jun 2026", "createdDate"),
+          field("Last updated", node.updated || "12 Jun 2026", "updated")
+        ].join("");
+        detailMetrics.innerHTML = [metric("Monthly manpower", node.manpower || "0"), metric("Monthly capacity", node.capacity || "0 pcs"), metric("Monthly efficiency", node.efficiency || "0%")].join("");
+      }
+      detailMetrics.insertAdjacentHTML("afterend", `<div class="detail-actions"><button class="btn primary" id="saveDetails" type="button">Save Changes</button><button class="btn" id="addChildFromDetail" type="button">Add Child</button><button class="btn" id="toggleStatusFromDetail" type="button">${node.status === "ACTIVE" ? "Deactivate" : "Reactivate"}</button><button class="btn danger" id="deleteFromDetail" type="button">Soft Delete</button></div>`);
+      renderCanvas();
+    }
+
+    function createNode(type, values = {}) {
+      const base = { id: `${type}-${++idCounter}`, type, name: values.name || `${labelFor(type)} ${idCounter}`, status: "ACTIVE", createdBy: "Industrial Engineer", createdDate: "13 Jun 2026", updated: "13 Jun 2026" };
+      if (type === "machine") return { ...base, machineType: values.machineType || "Single Needle", model: values.model || "", usage: "0%", capacity: "0 pcs" };
+      return { ...base, work: values.work || "Sewing", supervisor: values.supervisor || "Unassigned", shift: values.shift || "8", manpower: "0", capacity: "0 pcs", efficiency: "0%", expanded: type === "floor", children: [] };
+    }
+
+    function openAddModal(type = "floor", parentId = null) {
+      addState.type = type;
+      addState.parentId = parentId;
+      const parent = parentId ? findNode(parentId).node : null;
+      document.getElementById("addModalTitle").textContent = `Add ${labelFor(type)}`;
+      document.getElementById("addParent").value = parent ? parent.name : "Main Factory";
+      document.getElementById("addType").value = labelFor(type);
+      document.getElementById("addName").value = type === "machine" ? "SN-03" : `${labelFor(type)} ${idCounter + 1}`;
+      document.getElementById("addWorkField").style.display = type === "machine" ? "none" : "";
+      document.getElementById("addMachineTypeField").style.display = type === "machine" ? "" : "none";
+      document.getElementById("addModelField").style.display = type === "machine" ? "" : "none";
+      document.getElementById("addSupervisorField").style.display = type === "machine" ? "none" : "";
+      document.getElementById("addShiftField").style.display = type === "machine" ? "none" : "";
+      addModal.classList.add("open");
+    }
+
+    function saveAddModal() {
+      const name = document.getElementById("addName").value.trim();
+      const parentId = addState.parentId;
+      if (!name) return showToast("Name is required.");
+      if (activeSiblingNameExists(parentId, name)) return showToast(`${name} already exists under this parent.`);
+      const node = createNode(addState.type, {
+        name,
+        work: document.getElementById("addWork").value.trim(),
+        supervisor: document.getElementById("addSupervisor").value.trim(),
+        shift: document.getElementById("addShift").value.trim(),
+        machineType: document.getElementById("addMachineType").value.trim(),
+        model: document.getElementById("addModel").value.trim()
+      });
+      if (parentId) {
+        const parent = findNode(parentId).node;
+        parent.children ||= [];
+        parent.children.push(node);
+        parent.expanded = true;
+      } else {
+        layout.push(node);
+      }
+      addModal.classList.remove("open");
+      selectNode(node.id);
+      showToast(`${node.name} created and selected.`);
+    }
+
+    function softDelete(id) {
+      const found = findNode(id);
+      if (!found) return;
+      function markDeleted(node) {
+        node.status = "DELETED";
+        (node.children || []).forEach(markDeleted);
+      }
+      markDeleted(found.node);
+      selectedId = null;
+      detailPanel.classList.remove("open");
+      renderCanvas();
+      showToast("Node and descendants soft-deleted.");
+    }
+
+    function toggleStatus(id) {
+      const found = findNode(id);
+      if (!found) return;
+      const targetStatus = found.node.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+      function setStatus(node) {
+        if (node.status !== "DELETED") node.status = targetStatus;
+        (node.children || []).forEach(setStatus);
+      }
+      setStatus(found.node);
+      selectNode(id);
+      showToast(targetStatus === "ACTIVE" ? "Reactivated entire subtree." : "Node and descendants deactivated.");
+    }
+
+    function applySearch() {
+      const query = searchInput.value.trim().toLowerCase();
+      document.querySelectorAll(".canvas-node").forEach((el) => el.classList.remove("is-match", "is-dimmed"));
+      if (!query) return;
+      document.querySelectorAll(".canvas-node").forEach((el) => {
+        const found = findNode(el.dataset.id);
+        const name = found?.node.name.toLowerCase() || "";
+        const matched = name.includes(query);
+        el.classList.toggle("is-match", matched);
+        el.classList.toggle("is-dimmed", !matched);
+      });
+    }
+
+    document.addEventListener("click", (event) => {
+      const id = event.target.closest("[data-id]")?.dataset.id;
+      if (!event.target.closest(".context-menu")) contextMenu.classList.remove("open");
+      if (event.target.closest("#openAddFloor, #emptyAddFloor, #quickAddFloor")) return openAddModal("floor");
+      const inlineAdd = event.target.closest("[data-add-child]");
+      if (inlineAdd) {
+        const parentId = inlineAdd.dataset.addChild;
+        return openAddModal(nextType(findNode(parentId).node.type), parentId);
+      }
+      if (event.target.closest("#openBulkAdd")) { bulkModal.classList.add("open"); return; }
+      if (event.target.closest(".canvas-toolbar .btn")) {
+        const label = event.target.textContent.trim();
+        if (label === "Fit View") showToast("Canvas view fitted.");
+        if (label === "Show Inactive") showToast("Inactive nodes are visible.");
+        if (label === "Validate Layout") showToast("Layout validation complete. One work-type warning remains.");
+        return;
+      }
+      if (event.target.closest("#addBulkRow")) {
+        document.querySelector(".bulk-grid").insertAdjacentHTML("beforeend", `<div class="bulk-row"><input value="Line ${idCounter + 1}"><input value="Sewing"></div>`);
+        return;
+      }
+      if (event.target.closest(".modal-close")) { event.target.closest(".modal-backdrop").classList.remove("open"); return; }
+      if (event.target.closest("#addModal .modal-save")) return saveAddModal();
+      if (event.target.closest("#bulkModal .modal-save")) {
+        const parent = findNode("unit-a").node;
+        document.querySelectorAll(".bulk-row").forEach((row) => {
+          const [nameInput, workInput] = row.querySelectorAll("input");
+          if (parent.children.length < 10 && !activeSiblingNameExists(parent.id, nameInput.value.trim())) parent.children.push(createNode("line", { name: nameInput.value.trim(), work: workInput.value.trim(), supervisor: "Unassigned", shift: "8" }));
+        });
+        parent.expanded = true;
+        bulkModal.classList.remove("open");
+        renderCanvas();
+        showToast("Bulk lines created under Unit A.");
+        return;
+      }
+      if (event.target.closest(".node-toggle")) {
+        const found = findNode(id);
+        found.node.expanded = !found.node.expanded;
+        renderCanvas();
+        return;
+      }
+      if (event.target.closest(".more")) {
+        contextMenu.dataset.nodeId = id;
+        contextMenu.style.left = `${event.clientX - 190}px`;
+        contextMenu.style.top = `${event.clientY + 8}px`;
+        contextMenu.classList.add("open");
+        return;
+      }
+      const action = event.target.closest("[data-menu-action]")?.dataset.menuAction;
+      if (action) {
+        const menuId = contextMenu.dataset.nodeId;
+        if (action === "add-child") openAddModal(nextType(findNode(menuId).node.type), menuId);
+        if (action === "bulk-add") bulkModal.classList.add("open");
+        if (action === "toggle-status") toggleStatus(menuId);
+        if (action === "delete") softDelete(menuId);
+        if (action === "rename") { selectNode(menuId); detailFields.querySelector("[data-edit='name']")?.focus(); showToast("Rename in detail panel."); }
+        contextMenu.classList.remove("open");
+        return;
+      }
+      if (event.target.closest("#saveDetails")) {
+        const found = findNode(selectedId);
+        detailFields.querySelectorAll("[data-edit]").forEach((input) => {
+          const key = input.dataset.edit;
+          if (key === "name" && activeSiblingNameExists(found.parent?.id || null, input.value.trim(), selectedId)) return showToast(`${input.value.trim()} already exists under this parent.`);
+          found.node[key] = input.value.trim();
+        });
+        found.node.updated = "13 Jun 2026";
+        selectNode(selectedId);
+        showToast("Changes saved.");
+        return;
+      }
+      if (event.target.closest("#addChildFromDetail")) return openAddModal(nextType(findNode(selectedId).node.type), selectedId);
+      if (event.target.closest("#toggleStatusFromDetail")) return toggleStatus(selectedId);
+      if (event.target.closest("#deleteFromDetail")) return softDelete(selectedId);
+      if (event.target.closest(".drag")) {
+        const found = findNode(id);
+        if (found?.siblings?.length > 1) {
+          const index = found.siblings.findIndex((node) => node.id === id);
+          const [node] = found.siblings.splice(index, 1);
+          found.siblings.splice(Math.max(0, index - 1), 0, node);
+          renderCanvas();
+        }
+        showToast("Reorder saved with batch display_order update.");
+        return;
+      }
+      if (id) selectNode(id);
+    });
+
+    document.addEventListener("dblclick", (event) => {
+      const id = event.target.closest("[data-id]")?.dataset.id;
+      const title = event.target.closest(".node-title strong");
+      if (!id || !title) return;
+      title.setAttribute("contenteditable", "true");
+      title.focus();
+      title.addEventListener("blur", () => {
+        const found = findNode(id);
+        const newName = title.textContent.trim();
+        if (!newName) return renderCanvas();
+        if (activeSiblingNameExists(found.parent?.id || null, newName, id)) {
+          showToast(`${newName} already exists under this parent.`);
+          renderCanvas();
+          return;
+        }
+        found.node.name = newName;
+        selectNode(id);
+        showToast("Renamed.");
+      }, { once: true });
+    });
+
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.trim().toLowerCase();
+      if (query) {
+        function expandMatches(nodes) {
+          nodes.forEach((node) => {
+            const childMatch = (node.children || []).some((child) => child.name.toLowerCase().includes(query) || (child.children || []).some((grandchild) => grandchild.name.toLowerCase().includes(query)));
+            if (childMatch || node.name.toLowerCase().includes(query)) node.expanded = true;
+            if (node.children) expandMatches(node.children);
+          });
+        }
+        expandMatches(layout);
+      }
+      renderCanvas();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "/" && document.activeElement !== searchInput) {
+        event.preventDefault();
+        searchInput.focus();
+      }
+    });
+
+    document.querySelector("select[aria-label='Month']")?.addEventListener("change", () => {
+      layout.forEach((floor) => {
+        floor.manpower = String(Number(floor.manpower || 0) + 4);
+        floor.efficiency = "87%";
+      });
+      if (selectedId) selectNode(selectedId); else renderCanvas();
+      showToast("Monthly aggregates updated without page reload.");
+    });
+
+    renderCanvas();
+  </script>
+</body>
+</html>
